@@ -1,0 +1,369 @@
+{
+  "servers": {
+    "MediaServer": {
+      "hostname": "media-server",
+      "ssh": {
+        "http": {
+          "user": "username",
+          "host": "host",
+          "key": "secret_rsa",
+          "tunnel": true,
+          "tunnel-reverse": true,
+          "local-host": "127.0.0.1",
+          "local-port": 3306,
+          "remote-port": 8080
+        }
+      },
+      "firewall-before": [
+        {
+          "rule": "# THIS IS BEFORE"
+        },
+        {
+          "rule": "# SERVER BEFORE: myip: {{.IshtarGate.Vars.myip}} mymac: {{.Server.Vars.mymac}}"
+        }
+      ],
+      "firewall-after": [
+        {
+          "rule": "# THIS IS AFTER"
+        },
+        {
+          "rule": "# SERVER AFTER: myip: {{.IshtarGate.Vars.myip}} mymac: {{.Server.Vars.mymac}}"
+        }
+      ],
+      "networks": {
+        "lan": {
+          "ip": "192.168.1.31",
+          "hosts": [
+            "tv",
+            "movies",
+            "pictures",
+            "storage"
+          ],
+          "services-passive": {
+            "HTTP": {
+              "port": 80,
+              "rules": [
+                {
+                  "rule": "-A INPUT -p tcp --dport {{.Service.Port}} -j ACCEPT"
+                }
+              ]
+            },
+            "HTTPS": {
+              "port": 443,
+              "rules": [
+                {
+                  "rule": "-A INPUT -p tcp --dport {{.Service.Port}} -j ACCEPT"
+                }
+              ]
+            },
+            "SSH": {
+              "port": 22,
+              "rules": [
+                {
+                  "rule": "-A INPUT -p tcp --src {{.IshtarGate.Vars.myip}} --dport {{.Service.Port}} -j ACCEPT"
+                },
+                {
+                  "rule": "# IP: {{.Network.IP}} Port: {{.Service.Port}} MyIP: {{.IshtarGate.Vars.myip}} MyPubKey: {{.Service.Vars.MYPUBLICKEY}}"
+                }
+              ],
+              "vars": {
+                "MYPUBLICKEY": "0a:0b:0c:0d:0e:0f:00:01:02:03:04:05:06:07:08:09"
+              }
+            }
+          },
+          "services-acquirable": {
+            "mysql": {
+              "port": 3306,
+              "rules": [
+                {
+                  "rule": "-A INPUT -p tcp --src {{.SourceNetwork.IP}} --dport {{.DestinationService.Port}} -j {{if index .DestinationNetwork.Vars \"in-interface\"}}-i {{.DestinationNetworkName}} {{end}}ACCEPT"
+                }
+              ]
+            },
+            "ssh": {
+              "port": 22,
+              "rules": [
+                {
+                  "rule": "-A INPUT -p tcp --src {{.SourceNetwork.IP}} --dport {{.DestinationService.Port}} -j {{if index .DestinationNetwork.Vars \"in-interface\"}}-i {{.DestinationNetworkName}} {{end}}ACCEPT"
+                },
+                {
+                  "rule": "# SourceNetwork.IP: {{.SourceNetwork.IP}} SourceService.Port: {{.SourceService.Port}} DestinationNetwork.IP: {{.DestinationNetwork.IP}} DestinationService.Port: {{.DestinationService.Port}} MyIP: {{.IshtarGate.Vars.myip}}"
+                }
+              ]
+            }
+          }
+        },
+        "null": {
+          "ip": "127.0.0.0"
+        },
+        "wan": {
+          "ip": "10.0.0.1",
+          "hosts": [
+            "storage",
+            "storage.local"
+          ],
+          "services-passive": {
+            "ssh": {
+              "port": 22,
+              "rules": [
+                {
+                  "rule": "-A INPUT -p tcp --src {{.IshtarGate.Vars.myip}} --dport {{.Service.Port}} -j ACCEPT"
+                },
+                {
+                  "rule": "# IP: {{.Network.IP}} Port: {{.Service.Port}} MyIP: {{.IshtarGate.Vars.myip}} MyPubKey: {{.Service.Vars.MYPUBLICKEY}}"
+                }
+              ],
+              "vars": {
+                "MYPUBLICKEY": "0a:0b:0c:0d:0e:0f:00:01:02:03:04:05:06:07:08:09"
+              }
+            }
+          },
+          "services-acquirable": {
+            "ssh": {
+              "port": 22,
+              "rules": [
+                {
+                  "rule": "-A INPUT -p tcp --src {{.SourceNetwork.IP}} --dport {{.DestinationService.Port}} -j {{if index .DestinationNetwork.Vars \"in-interface\"}}-i {{.DestinationNetworkName}} {{end}}ACCEPT"
+                },
+                {
+                  "rule": "# SourceNetwork.IP: {{.SourceNetwork.IP}} SourceService.Port: {{.SourceService.Port}} DestinationNetwork.IP: {{.DestinationNetwork.IP}} DestinationService.Port: {{.DestinationService.Port}} MyIP: {{.IshtarGate.Vars.myip}}"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "vars": {
+        "mymac": "47:4F:4F:44:34:55"
+      }
+    },
+    "MyPC": {
+      "hostname": "home",
+      "hosts": {
+        "127.0.0.0": [
+          "mysql",
+          "memcache",
+          "redis",
+          "phpmyadmin",
+          "postgresql",
+          "rethinkdb"
+        ],
+        "127.0.0.1": [
+          "mypc"
+        ],
+        "127.0.0.2": [
+          "pc",
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "not really max per line currently, that's fine"
+        ]
+      },
+      "hosts-before": "\n\t\t# sometimes, we're going to need some comments\n127.0.0.4 and we don't care about the parser\n\n",
+      "hosts-after": "\n\nstuff",
+      "hosts-dependencies": {
+        "MediaServer": [
+          "lan",
+          "wan",
+          "null"
+        ]
+      },
+      "ssh": {
+        "mysql": {
+          "user": "username",
+          "host": "host",
+          "key": "secret_rsa",
+          "tunnel": true,
+          "local-host": "localhost",
+          "local-port": 3306,
+          "remote-host": "127.0.0.1",
+          "remote-port": 3306
+        },
+        "ssh": {
+          "user": "username",
+          "host": "host"
+        }
+      },
+      "networks": {
+        "lan": {
+          "ip": "192.168.1.13",
+          "services-passive": {
+            "SSH": {
+              "port": 22,
+              "rules": [
+                {
+                  "rule": "-A INPUT -p tcp --src {{.IshtarGate.Vars.myip}} --dport {{.Service.Port}} -j ACCEPT"
+                },
+                {
+                  "rule": "# IP: {{.Network.IP}} Port: {{.Service.Port}} MyIP: {{.IshtarGate.Vars.myip}} MyPubKey: {{.Service.Vars.MYPUBLICKEY}}"
+                }
+              ],
+              "vars": {
+                "MYPUBLICKEY": "0a:0b:0c:0d:0e:0f:00:01:02:03:04:05:06:07:08:09"
+              }
+            }
+          },
+          "service-dependencies": {
+            "MediaServer": {
+              "lan": {
+                "mysql": null,
+                "ssh": {
+                  "port": 22,
+                  "rules": [
+                    {
+                      "rule": "-A INPUT -p tcp --src {{.SourceNetwork.IP}} --dport {{.DestinationService.Port}} -j {{if index .DestinationNetwork.Vars \"in-interface\"}}-i {{.DestinationNetworkName}} {{end}}ACCEPT"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "vars": {
+            "in-interface": true
+          }
+        }
+      }
+    },
+    "remote": {
+      "hostname": "remote",
+      "networks": {
+        "private": {
+          "ip": "127.0.0.10",
+          "services-acquirable": {
+            "mysql": {
+              "port": 3306,
+              "rules": [
+                {
+                  "rule": "-A INPUT -p tcp --src {{.SourceNetwork.IP}} --dport {{.DestinationService.Port}} -j {{if index .DestinationNetwork.Vars \"in-interface\"}}-i {{.DestinationNetworkName}} {{end}}ACCEPT"
+                }
+              ]
+            }
+          },
+          "firewall-rules-before": [
+            {
+              "rule": "# NETWORK BEFORE: IP: {{.Network.IP}} MyIP: {{.IshtarGate.Vars.myip}} Hello? {{.Network.Vars.hello}}"
+            }
+          ],
+          "firewall-rules-after": [
+            {
+              "rule": "# NETWORK AFTER: IP: {{.Network.IP}} MyIP: {{.IshtarGate.Vars.myip}} Hello? {{.Network.Vars.hello}}"
+            }
+          ],
+          "vars": {
+            "hello": "goodbye"
+          }
+        },
+        "public": {
+          "ip": "0.0.0.0",
+          "services-passive": {
+            "http": {
+              "port": 80,
+              "rules": [
+                {
+                  "rule": "-A INPUT -p tcp --dport {{.Service.Port}} -j ACCEPT"
+                }
+              ]
+            },
+            "https": {
+              "port": 443,
+              "rules": [
+                {
+                  "rule": "-A INPUT -p tcp --dport {{.Service.Port}} -j ACCEPT"
+                }
+              ]
+            }
+          },
+          "services-acquirable": {
+            "ssh": {
+              "port": 22,
+              "rules": [
+                {
+                  "rule": "-A INPUT -p tcp --src {{.SourceNetwork.IP}} --dport {{.DestinationService.Port}} -j {{if index .DestinationNetwork.Vars \"in-interface\"}}-i {{.DestinationNetworkName}} {{end}}ACCEPT"
+                },
+                {
+                  "rule": "# SourceNetwork.IP: {{.SourceNetwork.IP}} SourceService.Port: {{.SourceService.Port}} DestinationNetwork.IP: {{.DestinationNetwork.IP}} DestinationService.Port: {{.DestinationService.Port}} MyIP: {{.IshtarGate.Vars.myip}}"
+                }
+              ]
+            }
+          },
+          "service-dependencies": {
+            "MediaServer": {
+              "lan": {
+                "ssh": {
+                  "port": 22,
+                  "rules": [
+                    {
+                      "rule": "-A INPUT -p tcp --src {{.SourceNetwork.IP}} --dport {{.DestinationService.Port}} -j {{if index .DestinationNetwork.Vars \"in-interface\"}}-i {{.DestinationNetworkName}} {{end}}ACCEPT"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "solo": {
+      "hostname": "solo",
+      "networks": {
+        "private": {
+          "ip": "127.0.0.150"
+        },
+        "public": {
+          "ip": "0.0.0.0"
+        }
+      }
+    }
+  },
+  "firewall-type": 1,
+  "firewall-rules-before": [
+    {
+      "rule": "-F"
+    },
+    {
+      "rule": "-P INPUT DROP"
+    },
+    {
+      "rule": "-P FORWARD DROP"
+    },
+    {
+      "rule": "-P OUTPUT DROP"
+    },
+    {
+      "rule": "-A INPUT -i lo -j ACCEPT"
+    },
+    {
+      "rule": "-A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT"
+    },
+    {
+      "rule": "-A OUTPUT -j ACCEPT"
+    },
+    {
+      "rule": "# GLOBAL BEFORE: myip: {{.IshtarGate.Vars.myip}}"
+    }
+  ],
+  "firewall-rules-after": [
+    {
+      "rule": "-A INPUT -p icmp --icmp-type echo-request -j ACCEPT"
+    },
+    {
+      "rule": "-N LOGGING"
+    },
+    {
+      "rule": "-A INPUT -j LOGGING"
+    },
+    {
+      "rule": "-A OUTPUT -j LOGGING"
+    },
+    {
+      "rule": "-A LOGGING -m limit --limit 5/min -j LOG --log-prefix \"IPTables Packet Dropped: \" --log-level 7"
+    },
+    {
+      "rule": "-A LOGGING -j DROP"
+    },
+    {
+      "rule": "# GLOBAL AFTER: myip: {{.IshtarGate.Vars.myip}}"
+    }
+  ],
+  "vars": {
+    "myip": "255.255.255.255"
+  }
+}

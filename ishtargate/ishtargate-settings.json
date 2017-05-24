@@ -1,0 +1,7 @@
+{
+  "build-path": "unittest",
+  "build-remove-folder-hostname": true,
+  "build-remove-folder-hosts": true,
+  "build-remove-folder-ssh": true,
+  "build-remove-folder-firewall": true
+}
